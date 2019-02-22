@@ -14,6 +14,8 @@
 @property (nonatomic,assign) NSUInteger currentIndex;
 @property (nonatomic,assign) NSUInteger nextIndex;
 @property (nonatomic,assign) BOOL userDraggingStartedTransitionInProgress;
+// Since we're doing things like delaying actions to next run loop, etc, we could end up in race conditions with multiple tab selection transitions at once, so track count rather than bool flag.
+@property (nonatomic,assign) int tabSelectionTransitionsInProgress;
 @end
 
 @implementation THSegmentedPager
@@ -37,11 +39,11 @@
     [self.pageViewController.view setAutoresizingMask:(UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight)];
     [self addChildViewController:self.pageViewController];
     [self.contentContainer addSubview:self.pageViewController.view];
-    
+
     [self.pageControl addTarget:self
                          action:@selector(pageControlValueChanged:)
                forControlEvents:UIControlEventValueChanged];
-    
+
     self.pageControl.backgroundColor = [UIColor colorWithRed:69/255.0 green:69/255.0 blue:69/255.0 alpha:1];
     self.pageControl.titleTextAttributes = @{NSForegroundColorAttributeName : [UIColor colorWithRed:127/255.0 green:127/255.0 blue:127/255.0 alpha:1]};
     self.pageControl.selectionIndicatorColor = [UIColor colorWithRed:242/255.0 green:121/255.0 blue:53/255.0 alpha:1];
@@ -50,7 +52,7 @@
     self.pageControl.selectionStyle = HMSegmentedControlSelectionStyleFullWidthStripe;
     self.pageControl.verticalDividerEnabled = YES;
     self.pageControl.verticalDividerColor = [UIColor colorWithRed:127/255.0 green:127/255.0 blue:127/255.0 alpha:1];
-    
+
     // Obtain the ScrollViewDelegate
     self.shouldBounce = YES;
     for (UIView *view in self.pageViewController.view.subviews ) {
@@ -125,6 +127,17 @@
     }
 }
 
+- (void)ensureIntegrity {
+    // If there's no tab selection transitions in progress, ensure page control and vc are showing correct values.
+    if (self.tabSelectionTransitionsInProgress == 0) {
+        [self.pageControl setSelectedSegmentIndex:self.currentIndex animated:NO];
+        [self.pageViewController setViewControllers:@[[self selectedController]]
+                                          direction:UIPageViewControllerNavigationDirectionForward
+                                           animated:NO
+                                         completion:nil];
+    }
+}
+
 #pragma mark - UIPageViewControllerDataSource
 
 - (UIViewController *)pageViewController:(UIPageViewController *)pageViewController viewControllerBeforeViewController:(UIViewController *)viewController {
@@ -180,11 +193,11 @@
             [self.pageControl setSelectedSegmentIndex:self.currentIndex];
         }
     }
-    
+
     /* Need to calculate max/min offset for *every* page, not just the first and last. */
     CGFloat minXOffset = scrollView.bounds.size.width - (self.currentIndex * scrollView.bounds.size.width);
     CGFloat maxXOffset = (([self.pages count] - self.currentIndex) * scrollView.bounds.size.width);
-    
+
     if (!self.shouldBounce) {
         CGRect scrollBounds = scrollView.bounds;
         if (scrollView.contentOffset.x <= minXOffset) {
@@ -204,7 +217,7 @@
     /* Need to calculate max/min offset for *every* page, not just the first and last. */
     CGFloat minXOffset = scrollView.bounds.size.width - (self.currentIndex * scrollView.bounds.size.width);
     CGFloat maxXOffset = (([self.pages count] - self.currentIndex) * scrollView.bounds.size.width);
-    
+
     if (!self.shouldBounce) {
         if (scrollView.contentOffset.x <= minXOffset) {
             *targetContentOffset = CGPointMake(minXOffset, 0);
@@ -216,33 +229,42 @@
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
     self.userDraggingStartedTransitionInProgress = NO;
+
+    [self ensureIntegrity];
 }
 
 #pragma mark - Callback
 
 - (void)pageControlValueChanged:(id)sender {
-    
+
     // when user dragging initiated transition is still in progress, prevent pageControl from starting simultaneous transitions to avoid assertion failure and crash
-    
+
     // failure type 1: Assertion failure in -[UIPageViewController queuingScrollView:didEndManualScroll:toRevealView:direction:animated:didFinish:didComplete:], /SourceCache/UIKit_Sim/UIKit-2935.137/UIPageViewController.m:1866
     // Terminating app due to uncaught exception 'NSInternalInconsistencyException', reason: 'No view controller managing visible view
-    
+
     // failure type 2: Assertion failure in -[_UIQueuingScrollView _enqueueCompletionState:], /SourceCache/UIKit_Sim/UIKit-2935.137/_UIQueuingScrollView.m:499
     // Terminating app due to uncaught exception 'NSInternalInconsistencyException', reason: 'Duplicate states in queue'
-    
+
     if (!self.userDraggingStartedTransitionInProgress) {
-        
+
         // Update NextIndex
         self.nextIndex = [self.pageControl selectedSegmentIndex];
         UIPageViewControllerNavigationDirection direction = self.nextIndex > [self.pages indexOfObject:[self.pageViewController.viewControllers lastObject]] ? UIPageViewControllerNavigationDirectionForward : UIPageViewControllerNavigationDirectionReverse;
-        
+
+        self.tabSelectionTransitionsInProgress++;
         __weak THSegmentedPager *blocksafeSelf = self;
         [self.pageViewController setViewControllers:@[[self selectedController]]
                                           direction:direction
                                            animated:YES
-                                         completion:nil];
+                                         completion:^(BOOL finished) {
+                                             blocksafeSelf.tabSelectionTransitionsInProgress--;
+                                             // Assure integrity on next run loop (to prevent internal inconsistency)
+                                             dispatch_async(dispatch_get_main_queue(), ^{
+                                                 [blocksafeSelf ensureIntegrity];
+                                             });
+                                         }];
     } else {
-        [self.pageControl setSelectedSegmentIndex:self.currentIndex animated:NO];
+        [self ensureIntegrity];
     }
 }
 
