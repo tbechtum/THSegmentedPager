@@ -124,6 +124,7 @@
                                           direction:UIPageViewControllerNavigationDirectionForward
                                            animated:animated
                                          completion:NULL];
+        self.currentIndex = index;
     }
 }
 
