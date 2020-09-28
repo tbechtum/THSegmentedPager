@@ -21,8 +21,8 @@ This control combines the great [HMSegmentedControl](https://github.com/HeshamMe
 Install with [CocoaPods](http://cocoapods.org) by adding the following to your Podfile:
 
 ``` ruby
-platform :ios, '7.0'
-pod 'THSegmentedPager', '~> 1.1.3'
+platform :ios, '9.0'
+pod 'THSegmentedPager', '~> 1.1.4'
 ```
 
 **Note**: We follow http://semver.org for versioning the public API.
@@ -52,6 +52,10 @@ This will cause some errors with imports not found correctly which you'll need t
 - If it is used in a UINavigationController it will show the same Viewcontroller when it comes back
 - [Pull Request](https://github.com/hons82/THSegmentedPager/pull/3) thx to [noelrocha](https://github.com/noelrocha)
 - The control is now able to allocate viewcontrollers from the actual storyboard by just knowing a list of identifiers
+
+### V1.1.4
+
+- Xcode 12 and Cocoapods specific target support
 
 # Usage
 
