@@ -1,8 +1,8 @@
-source 'https://github.com/CocoaPods/Specs.git'
+source 'https://cdn.cocoapods.org/' # 'https://github.com/CocoaPods/Specs.git'
 platform :ios, '9.0'
 
 target 'THSegmentedPagerExample' do
-  pod 'HMSegmentedControl', '~> 1.5.2'
+  pod 'HMSegmentedControl', '~> 1.5.6' # Thomas Bechtum 06-OCT-20 , '~> 1.5.2'
   pod 'THSegmentedPager', :path=> '../../THSegmentedPager'
 end
 

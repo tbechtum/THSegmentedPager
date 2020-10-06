@@ -1,14 +1,14 @@
 PODS:
-  - HMSegmentedControl (1.5.2)
-  - THSegmentedPager (1.1.3):
+  - HMSegmentedControl (1.5.6)
+  - THSegmentedPager (1.1.4):
     - HMSegmentedControl (~> 1.5.2)
 
 DEPENDENCIES:
-  - HMSegmentedControl (~> 1.5.2)
+  - HMSegmentedControl (~> 1.5.6)
   - THSegmentedPager (from `../../THSegmentedPager`)
 
 SPEC REPOS:
-  https://github.com/cocoapods/specs.git:
+  trunk:
     - HMSegmentedControl
 
 EXTERNAL SOURCES:
@@ -16,9 +16,9 @@ EXTERNAL SOURCES:
     :path: "../../THSegmentedPager"
 
 SPEC CHECKSUMS:
-  HMSegmentedControl: 83b9686022d2176fb6457d2bdb61e5d6393fed7d
-  THSegmentedPager: 9d4fb2acc78d77246caf1e71d2e878bf5977b904
+  HMSegmentedControl: 34c1f54d822d8308e7b24f5d901ec674dfa31352
+  THSegmentedPager: 38002ba74613cacb1335656fd11f1df9a206cb2e
 
-PODFILE CHECKSUM: cffdfa023d219904e45fbdc538003edee0b4a965
+PODFILE CHECKSUM: c54a2cfda619f70675e4826e638d996cc0747497
 
-COCOAPODS: 1.9.3
+COCOAPODS: 1.10.0.rc.1
